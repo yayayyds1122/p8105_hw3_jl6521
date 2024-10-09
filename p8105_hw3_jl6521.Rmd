@@ -1,0 +1,102 @@
+---
+title: "p8105_hw3_jl6521"
+author: "Jiayi"
+date: "`r Sys.Date()`"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readxl)
+library(dplyr)
+library(p8105.datasets)
+library(knitr)
+```
+
+## Problem 1
+
+```{r description}
+data("ny_noaa")
+size = nrow(ny_noaa)
+column = ncol(ny_noaa)
+cleaned_noaa = ny_noaa %>% 
+  separate(date, into = c("year","month","day"), sep="-") 
+
+
+
+
+```
+Description of the dataset: the dataset consists of records from `r size` weather stations around the world with `r column` daily variables. They are ids, maximum and minimum temperature, total daily precipitation, snowfall, and snow depth.
+
+*and indicating the extent to which missing data is an issue. 
+## Problem 2
+
+```{r merged table}
+acc_data = read_csv("./data/nhanes_accel.csv",
+                    na = c("NA", ".", "")
+                    ) %>% 
+  janitor::clean_names()
+
+demo_data = read_csv("./data/nhanes_covar.csv",
+                     skip = 4,
+                     na = c("NA", ".", "")
+                     ) %>% 
+  janitor::clean_names()
+
+merged_mims = inner_join(demo_data,acc_data, by = "seqn") %>% 
+  filter(age >= 21) %>%
+  drop_na(sex, age, bmi, education) %>%
+  mutate(
+  sex = case_match(
+    sex,
+    1 ~ "male",
+    2 ~ "female"
+  )) %>% 
+  mutate(
+    education = case_match(
+      education,
+      1 ~ "Less then high school",
+      2 ~ "High school equivalent",
+      3 ~ "More than high school"
+    )
+  )
+
+```
+
+```{r table + visualization}
+
+education_table = merged_mims %>% 
+  group_by(education,sex) %>% 
+  summarize(
+    number = n(),
+    .groups = 'drop'
+  ) %>% 
+  pivot_wider(
+    names_from = sex,
+    values_from = number
+  )  
+education_table %>% 
+  kable(
+    col.names = c("Education level", "Female", "Male"),
+    caption = "Number of Men and Women by Education Category",
+    align = "c"
+  )
+
+
+
+education_visualization = ggplot(merged_mims,aes(x= education, y = age, color = sex)) + 
+  geom_boxplot(alpha = 0.3) + 
+  labs(
+    title = "Age Distribution by Education and Sex",
+    x = "Education Level",
+    y = "Age"
+  ) + 
+  theme_minimal()
+
+print(education_visualization)
+```
+
+
+
+
