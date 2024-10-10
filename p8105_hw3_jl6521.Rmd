@@ -22,10 +22,6 @@ size = nrow(ny_noaa)
 column = ncol(ny_noaa)
 cleaned_noaa = ny_noaa %>% 
   separate(date, into = c("year","month","day"), sep="-") 
-
-
-
-
 ```
 Description of the dataset: the dataset consists of records from `r size` weather stations around the world with `r column` daily variables. They are ids, maximum and minimum temperature, total daily precipitation, snowfall, and snow depth.
 
@@ -44,23 +40,19 @@ demo_data = read_csv("./data/nhanes_covar.csv",
                      ) %>% 
   janitor::clean_names()
 
-merged_mims = inner_join(demo_data,acc_data, by = "seqn") %>% 
+merged_mims = inner_join(demo_data,acc_data, by = "seqn") %>%
   filter(age >= 21) %>%
   drop_na(sex, age, bmi, education) %>%
-  mutate(
-  sex = case_match(
-    sex,
-    1 ~ "male",
-    2 ~ "female"
-  )) %>% 
-  mutate(
-    education = case_match(
-      education,
-      1 ~ "Less then high school",
-      2 ~ "High school equivalent",
-      3 ~ "More than high school"
-    )
-  )
+  mutate(sex = factor(sex,
+         levels = c(1,2),
+         labels = c("male", "female"))
+         ) %>% 
+  mutate(education = factor(education,
+         levels = c(1,2,3),
+         labels = c("Less than high school", 
+                    "High school equivalent",
+                    "More than high school")))
+         
 
 ```
 
@@ -83,10 +75,8 @@ education_table %>%
     align = "c"
   )
 
-
-
 education_visualization = ggplot(merged_mims,aes(x= education, y = age, color = sex)) + 
-  geom_boxplot(alpha = 0.3) + 
+  geom_boxplot(alpha = 0.5) + 
   labs(
     title = "Age Distribution by Education and Sex",
     x = "Education Level",
@@ -96,7 +86,65 @@ education_visualization = ggplot(merged_mims,aes(x= education, y = age, color = 
 
 print(education_visualization)
 ```
+Comment: From the plot, we can see that the age of the people with more than high school degree is usually lower than the other two education levels. The age of males and females are similar for both less than high school group and more than high school group, but not the high school equivalent group. In the high school equivalent group, the age of females is higher htan the males. 
 
+```{r aggregate activity}
+agg_data =
+  merged_mims %>% 
+  mutate(
+    total_activity = rowSums(across(starts_with("min")),na.rm = TRUE)
+  )%>%
+  select(seqn,sex,age,bmi,education,total_activity,everything())
 
+agg_visualization = agg_data %>% 
+  ggplot(aes(x=age,y=total_activity,color = sex))+
+  geom_point(alpha = 0.5) +
+  geom_smooth(se = FALSE) +
+  facet_grid(. ~ education) + 
+  labs(
+    title = "Total Activities against age",
+    y = "total activity"
+  )+
+  theme_minimal()
 
+print(agg_visualization)
+
+```
+Comment: 
+* For the less than high school group, the total activity of males and females decrease as age increase, except for a peak around age 60 when the total activities of two group increase from 45 to 60. Before 40 years old, the total activity of females are larger than of males, but after 40 years old, total activities for males are larger than females. 
+* For the high school equivalent group, the total activity increase at first when age is small and then decreases as females and male get older. For females, there's an small increase again at later age but not for males. Generally females have higher total activity than males except for the initial time. 
+* For the more than high school group, the total activity of females is larger than the males all the time. 
+
+```{r}
+time_plot = merged_mims %>% 
+  pivot_longer(
+    cols = min1:min1440,
+    names_to = "time",
+    values_to = "activity"
+  ) %>% 
+  group_by(education, sex, time) %>% 
+  summarize(mean_activity = mean(activity, na.rm = TRUE)) %>%
+  mutate(time = as.numeric(gsub("min", "", time))) %>%
+  ggplot(aes(x=time,y=mean_activity,color = sex))+
+  geom_line(alpha = 0.5) +
+  geom_smooth(se = FALSE)+
+  facet_grid(. ~ education) + 
+  labs(
+    title = "Activity over time for different education levels for males/females",
+    x = "time (minute)",
+    y = "activity"
+  ) +
+  theme_minimal()
+print(time_plot)
+```
+
+## Problem 3
+
+```{r}
+jan20 = read_csv("./data/citibike/Jan 2020 Citi.csv")
+jan24 = read_csv("./data/citibike/Jan 2024 Citi.csv")
+july20 = read_csv("./data/citibike/July 2020 Citi.csv")
+july24 = read_csv("./data/citibike/July 2024 Citi.csv")
+
+```
 
