@@ -140,11 +140,49 @@ print(time_plot)
 
 ## Problem 3
 
-```{r}
-jan20 = read_csv("./data/citibike/Jan 2020 Citi.csv")
-jan24 = read_csv("./data/citibike/Jan 2024 Citi.csv")
-july20 = read_csv("./data/citibike/July 2020 Citi.csv")
-july24 = read_csv("./data/citibike/July 2024 Citi.csv")
+```{r data_import}
+jan20 = read_csv("./data/citibike/Jan 2020 Citi.csv",
+                    na = c("NA", ".", ""), show_col_types = FALSE)%>% 
+  janitor::clean_names()
+jan24 = read_csv("./data/citibike/Jan 2024 Citi.csv",
+                    na = c("NA", ".", ""),show_col_types = FALSE)%>% 
+  janitor::clean_names()
+july20 = read_csv("./data/citibike/July 2020 Citi.csv",
+                    na = c("NA", ".", ""),show_col_types = FALSE)%>% 
+  janitor::clean_names()
+july24 = read_csv("./data/citibike/July 2024 Citi.csv",
+                    na = c("NA", ".", ""),show_col_types = FALSE)%>% 
+  janitor::clean_names()
 
 ```
+Description: the dataset records the ride ID, ride type, the day of the ride, duration of the ride, start and end station time, and also if it's citi bike member or casual riders.
+
+```{r table ride}
+jan20_new = jan20 %>% 
+  group_by(member_casual) %>% 
+  summarize(Janurary2020 = n())
+
+jan24_new = jan24 %>% 
+  group_by(member_casual) %>% 
+  summarize(Janurary2024 = n())
+
+july20_new = july20 %>% 
+  group_by(member_casual) %>% 
+  summarize(July2020 = n())
+
+july24_new = july24 %>% 
+  group_by(member_casual) %>% 
+  summarize(July2024 = n())
+
+full_table = jan20_new %>% 
+  left_join(jan24_new, by = "member_casual") %>% 
+  left_join(july20_new, by = "member_casual") %>%
+  left_join(july24_new, by = "member_casual") %>%   knitr::kable(
+  caption = "Total number of rides at each time",
+  cols.names = c("Member or casual", "Janurary 2020", "Janurary 2024", "July 2020", "July 2024")
+  )
+print(full_table)
+```
+
+
 
