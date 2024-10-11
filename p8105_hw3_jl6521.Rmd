@@ -15,7 +15,7 @@ library(knitr)
 ```
 
 ## Problem 1
-
+1. data cleaning
 ```{r description}
 data("ny_noaa")
 size = nrow(ny_noaa)
@@ -25,9 +25,12 @@ cleaned_noaa = ny_noaa %>%
 ```
 Description of the dataset: the dataset consists of records from `r size` weather stations around the world with `r column` daily variables. They are ids, maximum and minimum temperature, total daily precipitation, snowfall, and snow depth.
 
-*and indicating the extent to which missing data is an issue. 
-## Problem 2
+*and indicating the extent to which missing data is an issue.
 
+
+
+## Problem 2
+1. Table cleaning and binding  
 ```{r merged table}
 acc_data = read_csv("./data/nhanes_accel.csv",
                     na = c("NA", ".", "")
@@ -52,12 +55,10 @@ merged_mims = inner_join(demo_data,acc_data, by = "seqn") %>%
          labels = c("Less than high school", 
                     "High school equivalent",
                     "More than high school")))
-         
-
 ```
 
-```{r table + visualization}
-
+2. Table for education and number of men and women in each education category
+```{r table}
 education_table = merged_mims %>% 
   group_by(education,sex) %>% 
   summarize(
@@ -74,9 +75,12 @@ education_table %>%
     caption = "Number of Men and Women by Education Category",
     align = "c"
   )
+```
 
-education_visualization = ggplot(merged_mims,aes(x= education, y = age, color = sex)) + 
-  geom_boxplot(alpha = 0.5) + 
+3. Age distribution visualization 
+```{r age visualization}
+education_visualization = ggplot(merged_mims,aes(x= education, y = age, fill = sex)) + 
+  geom_boxplot() + 
   labs(
     title = "Age Distribution by Education and Sex",
     x = "Education Level",
@@ -86,8 +90,10 @@ education_visualization = ggplot(merged_mims,aes(x= education, y = age, color = 
 
 print(education_visualization)
 ```
+
 Comment: From the plot, we can see that the age of the people with more than high school degree is usually lower than the other two education levels. The age of males and females are similar for both less than high school group and more than high school group, but not the high school equivalent group. In the high school equivalent group, the age of females is higher htan the males. 
 
+4. Total activity against age for education levels 
 ```{r aggregate activity}
 agg_data =
   merged_mims %>% 
@@ -111,10 +117,11 @@ print(agg_visualization)
 
 ```
 Comment: 
-* For the less than high school group, the total activity of males and females decrease as age increase, except for a peak around age 60 when the total activities of two group increase from 45 to 60. Before 40 years old, the total activity of females are larger than of males, but after 40 years old, total activities for males are larger than females. 
-* For the high school equivalent group, the total activity increase at first when age is small and then decreases as females and male get older. For females, there's an small increase again at later age but not for males. Generally females have higher total activity than males except for the initial time. 
-* For the more than high school group, the total activity of females is larger than the males all the time. 
+For the less than high school group, the total activity of males and females decrease as age increase, except for a peak around age 60 when the total activities of two group increase from 45 to 60. Before 40 years old, the total activity of females are larger than of males, but after 40 years old, total activities for males are larger than females. 
+For the high school equivalent group, the total activity increase at first when age is small and then decreases as females and male get older. For females, there's an small increase again at later age but not for males. Generally females have higher total activity than males except for the initial time. 
+For the more than high school group, the total activity of females is larger than the males all the time.
 
+5. Three-panels plot for time courses for each education level
 ```{r}
 time_plot = merged_mims %>% 
   pivot_longer(
@@ -123,7 +130,7 @@ time_plot = merged_mims %>%
     values_to = "activity"
   ) %>% 
   group_by(education, sex, time) %>% 
-  summarize(mean_activity = mean(activity, na.rm = TRUE)) %>%
+  summarize(mean_activity = mean(activity, na.rm = TRUE),.groups = 'drop') %>%
   mutate(time = as.numeric(gsub("min", "", time))) %>%
   ggplot(aes(x=time,y=mean_activity,color = sex))+
   geom_line(alpha = 0.5) +
@@ -134,29 +141,53 @@ time_plot = merged_mims %>%
     x = "time (minute)",
     y = "activity"
   ) +
-  theme_minimal()
+  theme(legend.position = "bottom")
 print(time_plot)
 ```
+Comment: Three panel graphs have similar trends overall where they all decrease at first and then increase starting from 250 minutes (around 4am). 
+For the group with less than high school education, people's average activity peaks at similar time (750 min) for both females and males. 
+
+For the group with high school equivalent degree, most of the time, the mean time of activity of females are larger than males. For males, the time plot is relatively stable then females over the period of 750 min to 1125 min.
+
+For the group with more than high school degree, females have higher and more stable activity during the 500 min to 1125 min while males activity plot fluctuates a lot during that time.  
 
 ## Problem 3
-
+1. Data import and cleaning
 ```{r data_import}
 jan20 = read_csv("./data/citibike/Jan 2020 Citi.csv",
                     na = c("NA", ".", ""), show_col_types = FALSE)%>% 
-  janitor::clean_names()
+  janitor::clean_names() %>% 
+  mutate(
+    month = "Janurary",
+    year = "2020"
+  )
 jan24 = read_csv("./data/citibike/Jan 2024 Citi.csv",
                     na = c("NA", ".", ""),show_col_types = FALSE)%>% 
-  janitor::clean_names()
+  janitor::clean_names() %>% 
+  mutate(
+    month = "Janurary",
+    year = "2024"
+  )
 july20 = read_csv("./data/citibike/July 2020 Citi.csv",
                     na = c("NA", ".", ""),show_col_types = FALSE)%>% 
-  janitor::clean_names()
+  janitor::clean_names()%>% 
+  mutate(
+    month = "July",
+    year = "2020"
+  )
 july24 = read_csv("./data/citibike/July 2024 Citi.csv",
                     na = c("NA", ".", ""),show_col_types = FALSE)%>% 
-  janitor::clean_names()
+  janitor::clean_names()%>% 
+  mutate(
+    month = "July",
+    year = "2024"
+  )
 
+df_total = rbind(jan20,jan24,july20,july24)
 ```
-Description: the dataset records the ride ID, ride type, the day of the ride, duration of the ride, start and end station time, and also if it's citi bike member or casual riders.
+Description: the full dataset records the ride ID, ride type, the day of the week, the month and the year of the ride, duration of the ride, start and end station time, and also if it's citi bike member or casual riders.
 
+2. Table for total number of rides for causal and member riders 
 ```{r table ride}
 jan20_new = jan20 %>% 
   group_by(member_casual) %>% 
@@ -177,12 +208,65 @@ july24_new = july24 %>%
 full_table = jan20_new %>% 
   left_join(jan24_new, by = "member_casual") %>% 
   left_join(july20_new, by = "member_casual") %>%
-  left_join(july24_new, by = "member_casual") %>%   knitr::kable(
+  left_join(july24_new, by = "member_casual") %>% 
+  knitr::kable(
   caption = "Total number of rides at each time",
-  cols.names = c("Member or casual", "Janurary 2020", "Janurary 2024", "July 2020", "July 2024")
+  col.names = c("Member or casual", "Janurary 2020", "Janurary 2024", "July 2020", "July 2024")
   )
-print(full_table)
+
 ```
+Comment: from the table, we can see that as time passes, there are more rides for both casual riders and members. The number of member is always larger than the number of casual riders all the time.  
+
+3. Top 5 most popular starting stations
+```{r 3-2 popular stations} 
+july24 %>%
+	group_by(start_station_name) %>%
+	summarize(num_rides = n()) %>% 
+  arrange(desc(num_rides)) %>% 
+  slice_head(n = 5) %>% 
+  knitr::kable(
+    caption = "Top 5 Most Popular Starting Stations",
+    col.names = c("start station","total rides")
+    )
+```
+
+4. Effects of time on median ride duration
+```{r 3-3 effects of day}
+
+df_median = df_total %>% 
+  mutate(
+    weekdays = factor(weekdays,
+                      levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday","Sunday"))
+  ) %>% 
+  group_by(weekdays, month, year) %>% 
+  summarize(
+    median_dur = median(duration))
+
+ggplot(df_median,aes(x = weekdays, y = median_dur, color = interaction(month, year))) + 
+  geom_line(aes(group = interaction(month, year)))+
+  facet_grid(month ~ year) + 
+  theme_minimal()+
+  labs(title = "Median Ride Duration by Day of Week, Month, and Year",
+       x = "Day of the Week", y = "Median Duration") +
+  theme(legend.position = "bottom")
+```
+Comment: Comparing across year, the median duration of the rides in 2020 is larger than the median of those in 2024. Comparing across two months, the median duration of July would be larger than Janurary. Comparing across weeks, they are roughly the same, but median time for Saturday and Sunday is slightly higher.  
+
+5. Impact of month, membership status, and bike type on ride duration
+```{r factor impact ducation}
+bind_24 = rbind(july24,jan24)
+ggplot(bind_24, aes(x = member_casual,y = duration,fill = rideable_type))+ 
+  geom_boxplot()+
+  facet_grid(~month)+ 
+  theme(legend.position = "bottom")+
+  labs(
+    title = "Distribution of Ride Duration",
+    x = "Membership Status",
+    y = "Duration"
+  )
+
+```
+Comment: from the graph, we can see that there are lots of outliers with high duration riding time. The distribution of the duration time for casual riders are wider than the members, indicating that the members have a more fixed habit of riding. 
 
 
 
