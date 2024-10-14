@@ -202,12 +202,12 @@ time_plot = merged_mims %>%
     names_to = "time",
     values_to = "activity"
   ) %>% 
-  group_by(education, sex, time) %>% 
-  summarize(mean_activity = mean(activity, na.rm = TRUE),.groups = 'drop') %>%
+  #group_by(education, sex, time) %>% 
+  #summarize(mean_activity = mean(activity, na.rm = TRUE),.groups = 'drop') %>%
   mutate(time = as.numeric(gsub("min", "", time))) %>%
-  ggplot(aes(x=time,y=mean_activity,color = sex))+
+  ggplot(aes(x=time,y=activity,group = seqn,color = sex))+
   geom_line(alpha = 0.5) +
-  geom_smooth(se = FALSE)+
+  geom_smooth(aes(group = sex), se = FALSE)+
   facet_grid(. ~ education) + 
   labs(
     title = "Activity over time for different education levels for males/females",
@@ -260,87 +260,4 @@ df_total = rbind(jan20,jan24,july20,july24)
 ```
 Description: the full dataset records the ride ID, ride type, the day of the week, the month and the year of the ride, duration of the ride, start and end station time, and also if it's citi bike member or casual riders.
 
-2. Table for total number of rides for causal and member riders 
-```{r table ride}
-jan20_new = jan20 %>% 
-  group_by(member_casual) %>% 
-  summarize(Janurary2020 = n())
-
-jan24_new = jan24 %>% 
-  group_by(member_casual) %>% 
-  summarize(Janurary2024 = n())
-
-july20_new = july20 %>% 
-  group_by(member_casual) %>% 
-  summarize(July2020 = n())
-
-july24_new = july24 %>% 
-  group_by(member_casual) %>% 
-  summarize(July2024 = n())
-
-full_table = jan20_new %>% 
-  left_join(jan24_new, by = "member_casual") %>% 
-  left_join(july20_new, by = "member_casual") %>%
-  left_join(july24_new, by = "member_casual") %>% 
-  knitr::kable(
-  caption = "Total number of rides at each time",
-  col.names = c("Member or casual", "Janurary 2020", "Janurary 2024", "July 2020", "July 2024")
-  )
-
-```
-Comment: from the table, we can see that as time passes, there are more rides for both casual riders and members. The number of member is always larger than the number of casual riders all the time.  
-
-3. Top 5 most popular starting stations
-```{r 3-2 popular stations} 
-july24 %>%
-	group_by(start_station_name) %>%
-	summarize(num_rides = n()) %>% 
-  arrange(desc(num_rides)) %>% 
-  slice_head(n = 5) %>% 
-  knitr::kable(
-    caption = "Top 5 Most Popular Starting Stations",
-    col.names = c("start station","total rides"),
-    caption.position = "top"
-    )
-```
-
-4. Effects of time on median ride duration
-```{r 3-3 effects of day}
-
-df_median = df_total %>% 
-  mutate(
-    weekdays = factor(weekdays,
-                      levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday","Sunday"))
-  ) %>% 
-  group_by(weekdays, month, year) %>% 
-  summarize(
-    median_dur = median(duration))
-
-ggplot(df_median,aes(x = weekdays, y = median_dur, color = interaction(month, year))) + 
-  geom_line(aes(group = interaction(month, year)))+
-  facet_grid(month ~ year) + 
-  theme_minimal()+
-  labs(title = "Median Ride Duration by Day of Week, Month, and Year",
-       x = "Day of the Week", y = "Median Duration") +
-  theme(legend.position = "bottom")
-```
-Comment: Comparing across year, the median duration of the rides in 2020 is larger than the median of those in 2024. Comparing across two months, the median duration of July would be larger than Janurary. Comparing across weeks, they are roughly the same, but median time for Saturday and Sunday is slightly higher.  
-
-5. Impact of month, membership status, and bike type on ride duration
-```{r factor impact ducation}
-bind_24 = rbind(july24,jan24)
-ggplot(bind_24, aes(x = member_casual,y = duration,fill = rideable_type))+ 
-  geom_violin()+
-  facet_grid(~month)+ 
-  theme(legend.position = "bottom")+
-  labs(
-    title = "Distribution of Ride Duration",
-    x = "Membership Status",
-    y = "Duration"
-  )
-
-```
-Comment: from the graph, we can see that there are lots of outliers with high duration riding time. The distribution of the duration time for casual riders are wider than the members, indicating that the members have a more fixed habit of riding. For months, we can see that there are more outliers in July that many people have a higher duration of riding. 
-
-
-
+2. Table for total number of rides for causal and mem
